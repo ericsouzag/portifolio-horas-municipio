@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trabalhos feitos para a escola</title>
+  <meta name="description" content="Portfólio de serviços prestados em compensação de horas, mês a mês.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-in">
+      <div class="brand"><strong id="who"></strong><span id="where"></span></div>
+      <nav class="top-nav" aria-label="Meses">
+        <span id="monthnav" class="monthnav"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <a class="btn-pill" href="admin.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Entrar</a>
+      </nav>
+    </div>
+  </header>
+
+  <p id="demo" class="demo-banner" hidden>Modo demonstração: estes são trabalhos de exemplo. Preencha o <code>config.js</code> com os dados do Firebase para usar o site de verdade.</p>
+
+  <section class="hero">
+    <div class="wrap hero-in">
+      <div class="hero-text">
+        <span class="eyebrow">Portfólio · Compensação de horas</span>
+        <h1>Trabalhos feitos para a escola, mês a mês.</h1>
+        <p class="lead">Serviços realizados em compensação às reuniões administrativas. Cada registro mostra quem pediu, quanto tempo levou, o que foi feito e as imagens do resultado.</p>
+      </div>
+      <div class="tally" id="tally" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <main id="months" class="wrap" aria-live="polite"><p class="state">Carregando…</p></main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <span id="footnote"></span>
+      <a href="admin.html">Área do professor</a>
+    </div>
+  </footer>
+
+  <dialog id="lb" class="lb" aria-label="Galeria de imagens">
+    <div class="lb-head">
+      <div class="lb-title"><strong id="lbtitle"></strong><span id="lbmeta"></span></div>
+      <div class="lb-right">
+        <span id="lbpos" class="lb-pos"></span>
+        <button type="button" class="lb-btn" id="lbclose" aria-label="Fechar galeria">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="lb-stage">
+      <button type="button" class="lb-btn lb-nav" id="lbprev" aria-label="Imagem anterior">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="lb-frame"><img id="lbimg" alt=""></div>
+      <button type="button" class="lb-btn lb-nav" id="lbnext" aria-label="Próxima imagem">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="lb-thumbs" id="lbthumbs"></div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

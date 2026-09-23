@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Área do professor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ===================== Tela de login ===================== -->
+  <div id="gateview">
+    <header class="top">
+      <div class="wrap top-in">
+        <div class="brand"><strong class="js-name"></strong><span class="js-where"></span></div>
+        <a class="link-strong" href="index.html">Voltar ao portfólio</a>
+      </div>
+    </header>
+    <div class="gate">
+      <div class="gate-card">
+        <div class="gate-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <div>
+          <h1>Área do professor</h1>
+          <p>Entre com a sua conta Google para adicionar e editar trabalhos. O portfólio continua aberto para qualquer pessoa ver.</p>
+        </div>
+        <button class="btn btn-dark" id="login" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          Entrar com Google</button>
+        <p class="msg err" id="gatemsg" role="alert" hidden></p>
+        <p class="fine">Só o e-mail autorizado consegue publicar. Outras contas não têm acesso ao painel.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Painel ===================== -->
+  <div id="panelview" hidden>
+    <header class="top">
+      <div class="wrap top-in">
+        <div class="brand" style="align-items:center"><strong class="js-name"></strong><span class="badge">Área do professor</span></div>
+        <div class="top-nav" style="gap:16px">
+          <a class="link-strong" href="index.html" target="_blank" rel="noopener">Ver portfólio</a>
+          <button class="btn-ghost" id="openai" type="button" title="Configurar a IA">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+            IA</button>
+          <div class="me"><span class="avatar" id="avatar"></span><span id="me"></span></div>
+          <button class="btn-ghost" id="logout" type="button">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap panel-main">
+      <div class="panel-head">
+        <h1 id="formtitle">Novo trabalho</h1>
+        <p>Preencha, confira a prévia ao lado e publique. O trabalho entra no mês escolhido.</p>
+      </div>
+
+      <p class="msg" id="savemsg" role="status" hidden></p>
+
+      <div class="panel-grid">
+        <form class="form" id="f" autocomplete="off" novalidate>
+          <div class="row2">
+            <div class="field"><label for="month">Mês</label><select id="month"></select></div>
+            <div class="field"><label for="category">Categoria</label><select id="category"></select></div>
+          </div>
+
+          <div class="field"><label for="title">Título do trabalho</label><input type="text" id="title" placeholder="Ex.: Convite da festa junina" maxlength="120"></div>
+
+          <div class="row-req">
+            <div class="field"><label for="requester">Quem pediu</label><input type="text" id="requester" placeholder="Ex.: Paula, Ismara e Flávia" maxlength="120"></div>
+            <fieldset class="field">
+              <legend>Tempo gasto</legend>
+              <div class="hm">
+                <label>
+                  <input type="number" id="hours" min="0" max="99" value="0" inputmode="numeric" aria-label="Horas">h</label>
+                <label>
+                  <input type="number" id="minutes" min="0" max="59" step="5" value="0" inputmode="numeric" aria-label="Minutos">min</label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="field">
+            <label for="description">Descrição</label>
+            <textarea id="description" rows="5" maxlength="1500" placeholder="Conte em poucas linhas o que foi feito e para quê. Pode escrever do seu jeito e usar o botão da IA para deixar o texto mais caprichado."></textarea>
+            <div class="ai-row">
+              <button class="btn btn-small" type="button" id="improve">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"/></svg>
+                Melhorar texto com IA</button>
+              <button class="btn btn-small" type="button" id="undo" hidden>Desfazer</button>
+              <p class="hint" id="aimsg">Evite nomes de alunos ou dados pessoais. O portfólio é público.</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="link">Link do vídeo ou material <span class="opt">(opcional)</span></label>
+            <input type="url" id="link" placeholder="https://youtube.com/... ou https://drive.google.com/...">
+            <p class="hint">Na categoria Vídeo, ou com link do YouTube, aparece um botão de play sobre a primeira imagem. Nos outros casos, vira um botão "Abrir material".</p>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Imagens</span>
+            <label class="drop" id="drop">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F4FD1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+              <span><strong>Escolha as imagens</strong> ou arraste para cá</span>
+              <span class="hint">JPG ou PNG · a primeira vira a capa · são reduzidas automaticamente</span>
+              <input type="file" id="files" accept="image/*" multiple>
+            </label>
+            <div class="thumbs" id="thumbs"></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-danger left" type="button" id="cancel" hidden>Cancelar edição</button>
+            <button class="btn" type="button" id="draft">Salvar rascunho</button>
+            <button class="btn btn-primary" type="button" id="publish">Publicar no portfólio</button>
+          </div>
+        </form>
+
+        <aside class="aside">
+          <div>
+            <span class="aside-label" id="pvlabel">Prévia no portfólio</span>
+            <div class="preview">
+              <div class="preview-meta">
+                <div><small>Solicitado por</small><span id="pvwho">—</span></div>
+                <div><small>Tempo</small><span class="t" id="pvtime">0h</span></div>
+                <div><small>Categoria</small><span id="pvcat" style="font-weight:400"></span></div>
+              </div>
+              <h2 id="pvtitle">Título do trabalho</h2>
+              <p id="pvdesc">A descrição aparece aqui.</p>
+              <div class="preview-imgs" id="pvimgs"></div>
+            </div>
+          </div>
+          <div>
+            <span class="aside-label" id="listlabel">Trabalhos cadastrados</span>
+            <ul class="list" id="list"><li class="list-empty">Carregando…</li></ul>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===================== Configurar IA ===================== -->
+  <dialog class="dlg" id="aidlg" aria-labelledby="aititle">
+    <form method="dialog" id="aiform">
+      <div>
+        <h2 id="aititle">Configurar IA</h2>
+        <p class="hint">Usa o Gemini, do Google AI Studio (grátis, com limite de uso). A chave fica salva só neste navegador: não vai para o GitHub nem para o banco. Em outro computador ou no celular, cole de novo.</p>
+      </div>
+      <div class="field"><label for="gkey">Chave de API</label><input type="password" id="gkey" placeholder="Começa com AIza…" autocomplete="off"></div>
+      <div class="field"><label for="gmodel">Modelo <span class="opt">(pode deixar vazio)</span></label><input type="text" id="gmodel" placeholder="gemini-2.5-flash-lite"></div>
+      <p class="msg" id="keymsg" hidden></p>
+      <div class="actions">
+        <button class="btn btn-danger" type="button" id="clearkey">Apagar chave</button>
+        <button class="btn" value="cancel" formnovalidate>Fechar</button>
+        <button class="btn btn-primary" type="button" id="savekey">Salvar neste navegador</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
