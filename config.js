@@ -3,10 +3,17 @@
 // =====================================================================
 
 export const SITE = {
-  schoolName: "Escola Municipal Felipe de Freitas", // aparece no topo e no rodapé
   teacherName: "Eric",                              // seu nome
   role: "Professor de Informática",                  // seu cargo
   adminEmail: "ericdesouzag@gmail.com",                 // o e-mail Google que pode entrar no painel (admin.html)
+
+  // Escolas em que você trabalha. Cada uma tem a própria contagem de horas.
+  // "id" é o código interno: depois de cadastrar trabalhos, não mude o id (só o nome, se precisar).
+  // A primeira da lista é a que abre por padrão.
+  schools: [
+    { id: "felipe-de-freitas", name: "Escola Municipal Felipe de Freitas", short: "Felipe de Freitas" },
+    { id: "epifanio-mourao", name: "Escola Municipal Coronel Epifânio Mendes Mourão", short: "Coronel Epifânio" },
+  ],
 };
 
 // Cole aqui o firebaseConfig que o Firebase mostra ao registrar o app web (ver SETUP.md, passo 2).

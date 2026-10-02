@@ -61,8 +61,15 @@
 
       <p class="msg" id="savemsg" role="status" hidden></p>
 
+      <div class="msg" id="importbox" hidden>
+        <span style="flex:1">Importar os trabalhos iniciais (os do modo demonstração, com as imagens da pasta <code>trabalhos</code>). Trabalhos com o mesmo título não são duplicados.</span>
+        <button class="btn btn-primary btn-small" type="button" id="importbtn">Importar trabalhos iniciais</button>
+      </div>
+
       <div class="panel-grid">
         <form class="form" id="f" autocomplete="off" novalidate>
+          <div class="field"><label for="school">Escola</label><select id="school"></select></div>
+
           <div class="row2">
             <div class="field"><label for="month">Mês</label><select id="month"></select></div>
             <div class="field"><label for="category">Categoria</label><select id="category"></select></div>

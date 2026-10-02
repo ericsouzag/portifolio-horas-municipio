@@ -1,4 +1,6 @@
-import { db, DEMO, esc, fmtMin, minutesOf, monthInfo, isHttp, isVideo, splitNames, plural } from "./common.js";
+import {
+  db, DEMO, esc, fmtMin, minutesOf, monthInfo, isHttp, isVideo, splitNames, plural, SCHOOLS, schoolOf, schoolInfo,
+} from "./common.js";
 import { SITE } from "./config.js";
 import {
   collection, query, where, getDocs,
@@ -6,11 +8,9 @@ import {
 
 const $ = (s) => document.querySelector(s);
 let services = [];
+let school = SCHOOLS[0].id;
 
 $("#who").textContent = SITE.teacherName;
-$("#where").textContent = `${SITE.role} · ${SITE.schoolName}`;
-$("#footnote").textContent = `Registro de serviços prestados em compensação de horas · ${SITE.schoolName}`;
-document.title = `Trabalhos feitos para a escola · ${SITE.teacherName}`;
 
 async function load() {
   if (DEMO) {
@@ -42,10 +42,10 @@ function byMonth(list) {
 const anchor = (month) => `mes-${month || "sem-mes"}`;
 
 /* ------------------------------ Topo ------------------------------ */
-function renderTally(groups) {
-  const total = services.reduce((t, s) => t + minutesOf(s), 0);
+function renderTally(groups, list) {
+  const total = list.reduce((t, s) => t + minutesOf(s), 0);
   const max = Math.max(1, ...groups.map((g) => g.minutes));
-  const people = new Set(services.flatMap((s) => splitNames(s.requester).map((n) => n.toLowerCase())));
+  const people = new Set(list.flatMap((s) => splitNames(s.requester).map((n) => n.toLowerCase())));
 
   $("#tally").innerHTML = `
     <span class="tally-label">Horas totais trabalhadas</span>
@@ -59,7 +59,7 @@ function renderTally(groups) {
         </a>`).join("")}
     </div>
     <div class="stats">
-      <div><strong>${services.length}</strong><span>${services.length === 1 ? "trabalho" : "trabalhos"}</span></div>
+      <div><strong>${list.length}</strong><span>${list.length === 1 ? "trabalho" : "trabalhos"}</span></div>
       <div><strong>${people.size}</strong><span>${people.size === 1 ? "solicitante" : "solicitantes"}</span></div>
       <div><strong>${groups.length}</strong><span>${groups.length === 1 ? "mês" : "meses"}</span></div>
     </div>`;
@@ -122,7 +122,7 @@ function article(s) {
 
 function renderMonths(groups) {
   if (!groups.length) {
-    $("#months").innerHTML = `<p class="state">Nenhum trabalho publicado ainda.</p>`;
+    $("#months").innerHTML = `<p class="state">Nenhum trabalho publicado nesta escola ainda.</p>`;
     return;
   }
   $("#months").innerHTML = groups.map((g) => {
@@ -195,6 +195,42 @@ $("#months").addEventListener("click", (e) => {
   if (b) openLb(b.dataset.open, Number(b.dataset.i));
 });
 
+/* ------------------------------ Escola ------------------------------ */
+function renderSchoolTabs() {
+  $("#schooltabs").innerHTML = SCHOOLS.map((sc) => {
+    const min = services.filter((s) => schoolOf(s) === sc.id).reduce((t, s) => t + minutesOf(s), 0);
+    const on = sc.id === school;
+    return `<button type="button" class="school-tab${on ? " on" : ""}" data-school="${esc(sc.id)}" aria-pressed="${on}">
+      <span class="school-name"><span class="full">${esc(sc.name)}</span><span class="short">${esc(sc.short || sc.name)}</span></span>
+      <span class="school-hours">${fmtMin(min)}</span>
+    </button>`;
+  }).join("");
+}
+
+function render() {
+  const info = schoolInfo(school);
+  $("#where").textContent = `${SITE.role} · ${info.name}`;
+  $("#footnote").textContent = `Registro de serviços prestados em compensação de horas · ${info.name}`;
+  document.title = `${info.short || info.name} · Trabalhos de ${SITE.teacherName}`;
+  const list = services.filter((s) => schoolOf(s) === school);
+  const groups = byMonth(list);
+  renderSchoolTabs();
+  renderTally(groups, list);
+  renderMonths(groups);
+}
+
+$("#schooltabs").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-school]");
+  if (!b || b.dataset.school === school) return;
+  school = b.dataset.school;
+  try { localStorage.setItem("escola", school); } catch {}
+  const url = new URL(location.href);
+  url.searchParams.set("escola", school);
+  url.hash = "";
+  history.replaceState(null, "", url);
+  render();
+});
+
 /* ------------------------------ Início ------------------------------ */
 (async () => {
   try {
@@ -205,8 +241,10 @@ $("#months").addEventListener("click", (e) => {
     $("#tally").hidden = true;
     return;
   }
-  const groups = byMonth(services);
-  renderTally(groups);
-  renderMonths(groups);
+  const fromUrl = new URLSearchParams(location.search).get("escola");
+  let saved = null;
+  try { saved = localStorage.getItem("escola"); } catch {}
+  school = [fromUrl, saved].find((id) => SCHOOLS.some((x) => x.id === id)) || SCHOOLS[0].id;
+  render();
   if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
 })();

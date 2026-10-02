@@ -1,6 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig } from "./config.js";
+import { firebaseConfig, SITE } from "./config.js";
+
+export const SCHOOLS = SITE.schools;
+
+/** Trabalhos cadastrados antes da divisão por escola ficam na primeira escola da lista */
+export const schoolOf = (s) => (SCHOOLS.some((x) => x.id === s.school) ? s.school : SCHOOLS[0].id);
+
+export const schoolInfo = (id) => SCHOOLS.find((x) => x.id === id) || SCHOOLS[0];
 
 /** true enquanto o config.js ainda não recebeu os dados do Firebase */
 export const DEMO = !firebaseConfig.apiKey || firebaseConfig.apiKey === "COLE_AQUI";

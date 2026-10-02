@@ -1,5 +1,6 @@
 import {
   db, app, DEMO, CATEGORIAS, esc, fmtMin, minutesOf, monthInfo, monthOptions, currentMonth, isHttp,
+  SCHOOLS, schoolOf, schoolInfo,
 } from "./common.js";
 import { SITE } from "./config.js";
 import {
@@ -16,7 +17,7 @@ let busy = false;
 let beforeAi = null;  // texto antes da IA, para o "Desfazer"
 
 document.querySelectorAll(".js-name").forEach((el) => (el.textContent = SITE.teacherName));
-document.querySelectorAll(".js-where").forEach((el) => (el.textContent = `${SITE.role} · ${SITE.schoolName}`));
+document.querySelectorAll(".js-where").forEach((el) => (el.textContent = `${SITE.role} · ${SCHOOLS.map((x) => x.short || x.name).join(" e ")}`));
 
 function say(el, text, kind = "") {
   el.hidden = !text;
@@ -30,8 +31,49 @@ function showPanel(email) {
   $("#panelview").hidden = false;
   $("#me").textContent = email;
   $("#avatar").textContent = (email || "?")[0];
+  // A importação só faz sentido rodando no seu computador, onde a pasta "trabalhos" existe
+  $("#importbox").hidden = DEMO || !/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   loadList();
 }
+
+/* ------------------------------ Importação inicial ------------------------------ */
+$("#importbtn").addEventListener("click", async () => {
+  const box = $("#importbox");
+  const btn = $("#importbtn");
+  btn.disabled = true;
+  try {
+    const { DEMO_SERVICES } = await import("./demo.js");
+    const existing = new Set(cache.map((s) => (s.title || "").trim().toLowerCase()));
+    let done = 0, skipped = 0;
+    for (const s of DEMO_SERVICES) {
+      if (existing.has(s.title.trim().toLowerCase())) { skipped++; continue; }
+      box.firstElementChild.textContent = `Importando "${s.title}"… (${done + skipped + 1} de ${DEMO_SERVICES.length})`;
+      const full = [];
+      for (const url of s.images) full.push(await shrink(url, 1600, 0.82, 700000));
+      const thumbs = [];
+      for (const d of full.slice(0, 4)) thumbs.push(await shrink(d, 480, 0.72, 45000));
+      const ref = await addDoc(collection(db, "services"), {
+        title: s.title, requester: s.requester, category: s.category, month: s.month,
+        hours: s.hours, minutes: s.minutes, description: s.description, link: "", school: schoolOf(s),
+        thumbs, imageCount: full.length, published: true,
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      });
+      for (let i = 0; i < full.length; i++) {
+        await addDoc(collection(db, "services", ref.id, "images"), { data: full[i], order: i });
+      }
+      done++;
+    }
+    box.firstElementChild.textContent = `Pronto: ${done} importado(s)${skipped ? `, ${skipped} já existia(m)` : ""}. Confira no portfólio.`;
+    box.className = "msg good";
+    btn.hidden = true;
+    await loadList();
+  } catch (e) {
+    console.error(e);
+    box.firstElementChild.textContent = `Não foi possível importar: ${e.code || e.message}`;
+    box.className = "msg err";
+    btn.disabled = false;
+  }
+});
 
 if (DEMO) {
   say($("#gatemsg"), "O Firebase ainda não foi configurado no config.js. Veja o SETUP.md. Enquanto isso, dá para abrir o painel em modo demonstração (nada é salvo).");
@@ -69,6 +111,9 @@ function fillMonths(selected) {
     `<option value="${m}">${esc(monthInfo(m).label)}</option>`).join("");
   $("#month").value = selected;
 }
+$("#school").innerHTML = SCHOOLS.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+const lastSchool = () => { try { return localStorage.getItem("escola-painel"); } catch { return null; } };
+$("#school").addEventListener("change", () => { try { localStorage.setItem("escola-painel", $("#school").value); } catch {} });
 $("#category").innerHTML = CATEGORIAS.map((c) => `<option>${esc(c)}</option>`).join("");
 
 /* ------------------------------ Imagens ------------------------------ */
@@ -141,7 +186,7 @@ $("#thumbs").addEventListener("click", (e) => {
 const numVal = (id, max) => Math.min(max, Math.max(0, parseInt($(id).value, 10) || 0));
 
 function preview() {
-  $("#pvlabel").textContent = `Prévia no portfólio · ${monthInfo($("#month").value).label}`;
+  $("#pvlabel").textContent = `Prévia · ${schoolInfo($("#school").value).short} · ${monthInfo($("#month").value).label}`;
   $("#pvwho").textContent = $("#requester").value.trim() || "—";
   $("#pvtime").textContent = fmtMin(numVal("#hours", 99) * 60 + numVal("#minutes", 59));
   $("#pvcat").textContent = $("#category").value;
@@ -149,7 +194,7 @@ function preview() {
   $("#pvdesc").textContent = $("#description").value.trim() || "A descrição aparece aqui.";
   $("#pvimgs").innerHTML = imgs.slice(0, 3).map((im) => `<img src="${im.data}" alt="">`).join("");
 }
-["#month", "#category", "#title", "#requester", "#hours", "#minutes", "#description"].forEach((id) =>
+["#school", "#month", "#category", "#title", "#requester", "#hours", "#minutes", "#description"].forEach((id) =>
   $(id).addEventListener("input", preview));
 
 /* ------------------------------ IA ------------------------------ */
@@ -240,6 +285,7 @@ function resetForm() {
   $("#hours").value = 0; $("#minutes").value = 0;
   $("#category").value = CATEGORIAS[0];
   fillMonths(currentMonth());
+  $("#school").value = schoolInfo(lastSchool()).id;
   $("#undo").hidden = true;
   $("#aimsg").textContent = "Evite nomes de alunos ou dados pessoais. O portfólio é público.";
   $("#formtitle").textContent = "Novo trabalho";
@@ -261,6 +307,7 @@ async function edit(id) {
   $("#minutes").value = s.minutes || 0;
   $("#category").value = CATEGORIAS.includes(s.category) ? s.category : "Outro";
   fillMonths(s.month || currentMonth());
+  $("#school").value = schoolOf(s);
   $("#formtitle").textContent = `Editando: ${s.title}`;
   $("#cancel").hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -303,6 +350,7 @@ async function save(publish) {
       requester: $("#requester").value.trim(),
       category: $("#category").value,
       month: $("#month").value,
+      school: $("#school").value,
       thumbs,
       imageCount: imgs.length,
       published: publish,
@@ -318,7 +366,7 @@ async function save(publish) {
       if (im.id) await setDoc(doc(db, "services", id, "images", im.id), { order: i }, { merge: true });
       else { const r = await addDoc(collection(db, "services", id, "images"), { data: im.data, order: i }); im.id = r.id; }
     }
-    const label = monthInfo(data.month).label;
+    const label = `${schoolInfo(data.school).short} · ${monthInfo(data.month).label}`;
     resetForm();
     say(msg, publish ? `Publicado em ${label}. Já aparece no portfólio.` : "Rascunho salvo. Ele não aparece no portfólio até você publicar.", "good");
     await loadList();
@@ -346,14 +394,14 @@ async function loadList() {
     $("#list").innerHTML = `<li class="list-empty">Não foi possível carregar a lista (${esc(e.code || e.message)}).</li>`;
     return;
   }
-  cache.sort((a, b) => (b.month || "").localeCompare(a.month || "") || (a.title || "").localeCompare(b.title || ""));
+  cache.sort((a, b) => SCHOOLS.findIndex((x) => x.id === schoolOf(a)) - SCHOOLS.findIndex((x) => x.id === schoolOf(b)) || (b.month || "").localeCompare(a.month || "") || (a.title || "").localeCompare(b.title || ""));
   const pub = cache.filter((s) => s.published);
-  $("#listlabel").textContent = `Trabalhos cadastrados · ${fmtMin(pub.reduce((t, s) => t + minutesOf(s), 0))} publicadas`;
+  $("#listlabel").textContent = `Publicadas: ${SCHOOLS.map((x) => `${x.short} ${fmtMin(pub.filter((s) => schoolOf(s) === x.id).reduce((t, s) => t + minutesOf(s), 0))}`).join(" · ")}`;
   $("#list").innerHTML = cache.length ? cache.map((s) => `
     <li>
       <div class="info">
         <strong>${esc(s.title)}</strong>
-        <span>${esc([monthInfo(s.month).name, s.requester, fmtMin(minutesOf(s))].filter(Boolean).join(" · "))}</span>
+        <span>${esc([schoolInfo(schoolOf(s)).short, monthInfo(s.month).name, s.requester, fmtMin(minutesOf(s))].filter(Boolean).join(" · "))}</span>
         ${s.published ? "" : `<span class="draft">Rascunho</span>`}
       </div>
       <button type="button" class="icon-btn" data-edit="${esc(s.id)}" aria-label="Editar ${esc(s.title)}">${EDIT}</button>
