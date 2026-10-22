@@ -7,12 +7,13 @@ export const SITE = {
   role: "Professor de Informática",                  // seu cargo
   adminEmail: "ericdesouzag@gmail.com",                 // o e-mail Google que pode entrar no painel (admin.html)
 
-  // Escolas em que você trabalha. Cada uma tem a própria contagem de horas.
+  // Escolas em que você trabalha. Cada uma tem a própria contagem de horas e a própria senha.
   // "id" é o código interno: depois de cadastrar trabalhos, não mude o id (só o nome, se precisar).
-  // A primeira da lista é a que abre por padrão.
+  // "login" é o e-mail da conta da escola criada no Firebase (SETUP.md, passo 9). A senha NÃO fica aqui:
+  // ela é definida só no Firebase, para ninguém conseguir lê-la no código do site.
   schools: [
-    { id: "felipe-de-freitas", name: "Escola Municipal Felipe de Freitas", short: "Felipe de Freitas" },
-    { id: "epifanio-mourao", name: "Escola Municipal Coronel Epifânio Mendes Mourão", short: "Coronel Epifânio" },
+    { id: "felipe-de-freitas", name: "Escola Municipal Felipe de Freitas", short: "Felipe de Freitas", login: "felipe@portfolio-escola.firebaseapp.com" },
+    { id: "epifanio-mourao", name: "Escola Municipal Coronel Epifânio Mendes Mourão", short: "Coronel Epifânio", login: "coronel@portfolio-escola.firebaseapp.com" },
   ],
 };
 

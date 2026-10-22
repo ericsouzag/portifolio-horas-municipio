@@ -1,6 +1,6 @@
 import {
   db, app, DEMO, CATEGORIAS, esc, fmtMin, minutesOf, monthInfo, monthOptions, currentMonth, isHttp,
-  SCHOOLS, schoolOf, schoolInfo,
+  SCHOOLS, schoolOf, schoolInfo, summarize,
 } from "./common.js";
 import { SITE } from "./config.js";
 import {
@@ -386,6 +386,18 @@ $("#draft").addEventListener("click", () => save(false));
 const EDIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`;
 const TRASH = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>`;
 
+/** Grava o campo escola nos trabalhos antigos e atualiza o resumo público da página inicial */
+async function syncSummary() {
+  if (DEMO) return;
+  for (const s of cache) {
+    if (s.school !== schoolOf(s)) {
+      await setDoc(doc(db, "services", s.id), { school: schoolOf(s) }, { merge: true });
+      s.school = schoolOf(s);
+    }
+  }
+  await setDoc(doc(db, "stats", "summary"), { ...summarize(cache), updatedAt: serverTimestamp() });
+}
+
 async function loadList() {
   try {
     if (DEMO) cache = (await import("./demo.js")).DEMO_SERVICES;
@@ -395,6 +407,7 @@ async function loadList() {
     return;
   }
   cache.sort((a, b) => SCHOOLS.findIndex((x) => x.id === schoolOf(a)) - SCHOOLS.findIndex((x) => x.id === schoolOf(b)) || (b.month || "").localeCompare(a.month || "") || (a.title || "").localeCompare(b.title || ""));
+  syncSummary().catch((e) => { console.error(e); say($("#savemsg"), `Não consegui atualizar o resumo da página inicial: ${e.code || e.message}. Confira se as regras novas do Firestore foram publicadas (SETUP.md, passo 5).`, "err"); });
   const pub = cache.filter((s) => s.published);
   $("#listlabel").textContent = `Publicadas: ${SCHOOLS.map((x) => `${x.short} ${fmtMin(pub.filter((s) => schoolOf(s) === x.id).reduce((t, s) => t + minutesOf(s), 0))}`).join(" · ")}`;
   $("#list").innerHTML = cache.length ? cache.map((s) => `

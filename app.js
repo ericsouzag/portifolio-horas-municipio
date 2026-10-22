@@ -1,25 +1,40 @@
 import {
-  db, DEMO, esc, fmtMin, minutesOf, monthInfo, isHttp, isVideo, splitNames, plural, SCHOOLS, schoolOf, schoolInfo,
+  db, app, DEMO, esc, fmtMin, minutesOf, monthInfo, isHttp, isVideo, splitNames, plural,
+  SCHOOLS, schoolOf, schoolInfo, schoolOfLogin, summarize,
 } from "./common.js";
 import { SITE } from "./config.js";
 import {
-  collection, query, where, getDocs,
+  collection, query, where, getDocs, doc, getDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const $ = (s) => document.querySelector(s);
-let services = [];
-let school = SCHOOLS[0].id;
+let services = [];        // trabalhos da escola aberta
+let school = null;        // escola aberta (null = página inicial)
+let user = null;          // conta logada (escola ou professor)
+let fbAuth = null;        // módulo de login do Firebase
+let auth = null;
+const demoUnlocked = new Set();
 
 $("#who").textContent = SITE.teacherName;
+if (DEMO) $("#demo").hidden = false;
 
-async function load() {
+const isAdminUser = () => !!user?.email && user.email.toLowerCase() === SITE.adminEmail.toLowerCase();
+const canSee = (id) => (DEMO ? demoUnlocked.has(id) : isAdminUser() || schoolOfLogin(user?.email) === id);
+const colorClass = (id) => `c${Math.max(0, SCHOOLS.findIndex((x) => x.id === id)) % 4}`;
+
+async function loadSchool(id) {
   if (DEMO) {
-    $("#demo").hidden = false;
     const { DEMO_SERVICES } = await import("./demo.js");
-    return DEMO_SERVICES;
+    return DEMO_SERVICES.filter((s) => schoolOf(s) === id);
   }
-  const snap = await getDocs(query(collection(db, "services"), where("published", "==", true)));
+  const snap = await getDocs(query(collection(db, "services"), where("school", "==", id), where("published", "==", true)));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+async function loadSummary() {
+  if (DEMO) return summarize((await import("./demo.js")).DEMO_SERVICES);
+  const snap = await getDoc(doc(db, "stats", "summary"));
+  return snap.exists() ? snap.data() : summarize([]);
 }
 
 /** Agrupa por mês, do mais recente para o mais antigo */
@@ -64,7 +79,7 @@ function renderTally(groups, list) {
       <div><strong>${groups.length}</strong><span>${groups.length === 1 ? "mês" : "meses"}</span></div>
     </div>`;
 
-  $("#monthnav").innerHTML = groups.slice(0, 4).map((g) =>
+  $("#monthnav").innerHTML = groups.slice(0, 3).map((g) =>
     `<a href="#${anchor(g.month)}">${esc(monthInfo(g.month).name)}</a>`).join("");
 }
 
@@ -195,56 +210,192 @@ $("#months").addEventListener("click", (e) => {
   if (b) openLb(b.dataset.open, Number(b.dataset.i));
 });
 
-/* ------------------------------ Escola ------------------------------ */
-function renderSchoolTabs() {
-  $("#schooltabs").innerHTML = SCHOOLS.map((sc) => {
-    const min = services.filter((s) => schoolOf(s) === sc.id).reduce((t, s) => t + minutesOf(s), 0);
-    const on = sc.id === school;
-    return `<button type="button" class="school-tab${on ? " on" : ""}" data-school="${esc(sc.id)}" aria-pressed="${on}">
-      <span class="school-name"><span class="full">${esc(sc.name)}</span><span class="short">${esc(sc.short || sc.name)}</span></span>
-      <span class="school-hours">${fmtMin(min)}</span>
+/* ------------------------------ Página inicial ------------------------------ */
+const LOCK = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+const OPEN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.9-1"/></svg>`;
+const ARROW = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+let summary = null;
+
+function renderCards() {
+  const data = summary?.schools || {};
+  $("#schoolcards").innerHTML = SCHOOLS.map((sc) => {
+    const d = data[sc.id] || { minutes: 0, count: 0 };
+    const open = canSee(sc.id);
+    return `<button type="button" class="school-card ${colorClass(sc.id)}" data-school="${esc(sc.id)}">
+      <span class="sc-top"><span class="sc-dot" aria-hidden="true"></span><span class="sc-lock">${open ? OPEN + " Acesso liberado" : LOCK + " Com senha"}</span></span>
+      <span class="sc-name">${esc(sc.name)}</span>
+      <span class="sc-nums"><strong>${fmtMin(d.minutes)}</strong><span>${plural(d.count, "trabalho", "trabalhos")}</span></span>
+      <span class="sc-cta">Ver trabalhos ${ARROW}</span>
     </button>`;
   }).join("");
 }
 
-function render() {
-  const info = schoolInfo(school);
-  $("#where").textContent = `${SITE.role} · ${info.name}`;
-  $("#footnote").textContent = `Registro de serviços prestados em compensação de horas · ${info.name}`;
-  document.title = `${info.short || info.name} · Trabalhos de ${SITE.teacherName}`;
-  const list = services.filter((s) => schoolOf(s) === school);
-  const groups = byMonth(list);
-  renderSchoolTabs();
-  renderTally(groups, list);
-  renderMonths(groups);
+function renderPanorama() {
+  const data = summary?.schools || {};
+  const months = [...new Set(SCHOOLS.flatMap((sc) => Object.keys(data[sc.id]?.months || {})))].sort().reverse();
+  const max = Math.max(1, ...SCHOOLS.flatMap((sc) => Object.values(data[sc.id]?.months || {})));
+  $("#grandtotal").textContent = fmtMin(SCHOOLS.reduce((t, sc) => t + (data[sc.id]?.minutes || 0), 0));
+  $("#legend").innerHTML = SCHOOLS.map((sc) =>
+    `<span class="${colorClass(sc.id)}"><span class="sc-dot" aria-hidden="true"></span>${esc(sc.short || sc.name)} <strong>${fmtMin(data[sc.id]?.minutes || 0)}</strong></span>`).join("");
+  if (!months.length) {
+    $("#panrows").innerHTML = `<p class="state">Nenhuma hora registrada ainda.</p>`;
+    return;
+  }
+  $("#panrows").innerHTML = months.map((m) => {
+    const info = monthInfo(m);
+    const total = SCHOOLS.reduce((t, sc) => t + (data[sc.id]?.months?.[m] || 0), 0);
+    return `<div class="pan-row">
+      <div class="pan-month"><strong>${esc(info.name)}</strong><span>${esc(info.year)}</span></div>
+      <div class="pan-bars">${SCHOOLS.map((sc) => {
+        const v = data[sc.id]?.months?.[m] || 0;
+        return `<div class="pan-bar ${colorClass(sc.id)}">
+          <span class="pan-label">${esc(sc.short || sc.name)}</span>
+          <span class="bar-track"><span style="width:${(v / max) * 100}%"></span></span>
+          <strong>${fmtMin(v)}</strong>
+        </div>`;
+      }).join("")}</div>
+      <div class="pan-total"><strong>${fmtMin(total)}</strong><span>no mês</span></div>
+    </div>`;
+  }).join("");
 }
 
-$("#schooltabs").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-school]");
-  if (!b || b.dataset.school === school) return;
-  school = b.dataset.school;
-  try { localStorage.setItem("escola", school); } catch {}
+async function showOverview() {
+  school = null;
+  services = [];
+  $("#overview").hidden = false;
+  $("#schoolview").hidden = true;
+  $("#back").hidden = $("#leave").hidden = $("#navsep").hidden = true;
+  $("#monthnav").innerHTML = "";
+  $("#where").textContent = SITE.role;
+  $("#footnote").textContent = "Registro de serviços prestados em compensação de horas";
+  document.title = `Trabalhos feitos para as escolas · ${SITE.teacherName}`;
+  renderCards();
+  if (!summary) {
+    try { summary = await loadSummary(); }
+    catch (e) { console.error(e); summary = summarize([]); }
+    renderCards();
+  }
+  renderPanorama();
+}
+
+async function showSchool(id) {
+  const info = schoolInfo(id);
+  school = id;
+  $("#overview").hidden = true;
+  $("#schoolview").hidden = false;
+  $("#back").hidden = $("#navsep").hidden = false;
+  $("#leave").hidden = !(schoolOfLogin(user?.email) === id || (DEMO && demoUnlocked.has(id)));
+  $("#where").textContent = `${SITE.role} · ${info.name}`;
+  $("#footnote").textContent = `Registro de serviços prestados em compensação de horas · ${info.name}`;
+  $("#schooltitle").textContent = info.name;
+  document.title = `${info.short || info.name} · Trabalhos de ${SITE.teacherName}`;
+  $("#months").innerHTML = `<p class="state">Carregando…</p>`;
+  $("#tally").innerHTML = "";
+  window.scrollTo(0, 0);
+  try {
+    services = await loadSchool(id);
+  } catch (e) {
+    console.error(e);
+    $("#months").innerHTML = `<p class="state">Não foi possível carregar os trabalhos desta escola (${esc(e.code || e.message)}). Volte às escolas e entre de novo com a senha.</p>`;
+    return;
+  }
+  if (school !== id) return;
+  const groups = byMonth(services);
+  renderTally(groups, services);
+  renderMonths(groups);
+  if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+}
+
+/* ------------------------------ Navegação ------------------------------ */
+function go(id) {
   const url = new URL(location.href);
-  url.searchParams.set("escola", school);
   url.hash = "";
-  history.replaceState(null, "", url);
-  render();
+  if (id) url.searchParams.set("escola", id); else url.searchParams.delete("escola");
+  history.pushState(null, "", url);
+  route();
+}
+
+function route() {
+  const id = new URLSearchParams(location.search).get("escola");
+  const valid = SCHOOLS.some((x) => x.id === id);
+  if (valid && canSee(id)) return showSchool(id);
+  showOverview();
+  if (valid) askPassword(id);
+}
+
+window.addEventListener("popstate", route);
+$("#back").addEventListener("click", (e) => { e.preventDefault(); go(null); });
+$("#schoolcards").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-school]");
+  if (!b) return;
+  if (canSee(b.dataset.school)) go(b.dataset.school);
+  else askPassword(b.dataset.school);
+});
+$("#leave").addEventListener("click", async () => {
+  if (DEMO) demoUnlocked.clear();
+  else if (user && !isAdminUser()) await fbAuth.signOut(auth);
+  go(null);
+});
+
+/* ------------------------------ Senha ------------------------------ */
+let pwSchool = null;
+
+function askPassword(id) {
+  pwSchool = id;
+  $("#pwschool").textContent = `Digite a senha da ${schoolInfo(id).name} para ver os trabalhos.`;
+  $("#pw").value = "";
+  $("#pwmsg").hidden = true;
+  if (!$("#pwdlg").open) $("#pwdlg").showModal();
+  $("#pw").focus();
+}
+
+$("#pwcancel").addEventListener("click", () => {
+  $("#pwdlg").close();
+  if (new URLSearchParams(location.search).has("escola")) go(null);
+});
+
+$("#pwform").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const pw = $("#pw").value;
+  const msg = $("#pwmsg");
+  if (!pw) { msg.textContent = "Digite a senha."; msg.hidden = false; return; }
+  const id = pwSchool;
+  $("#pwok").disabled = true;
+  try {
+    if (DEMO) {
+      demoUnlocked.add(id);
+    } else {
+      if (user && !isAdminUser()) await fbAuth.signOut(auth);
+      const cred = await fbAuth.signInWithEmailAndPassword(auth, schoolInfo(id).login, pw);
+      user = cred.user;
+    }
+    $("#pwdlg").close();
+    go(id);
+  } catch (err) {
+    const c = err.code || "";
+    msg.textContent =
+      /invalid-credential|wrong-password|user-not-found|invalid-login/.test(c) ? "Senha incorreta. Confira e tente de novo." :
+      c.includes("too-many-requests") ? "Muitas tentativas seguidas. Espere alguns minutos e tente de novo." :
+      c.includes("operation-not-allowed") ? "O acesso por senha ainda não foi ativado no Firebase (SETUP.md, passo 9)." :
+      c.includes("network") ? "Sem conexão com a internet. Verifique e tente de novo." :
+      `Não foi possível entrar (${c || err.message}).`;
+    msg.hidden = false;
+    $("#pw").select();
+  } finally {
+    $("#pwok").disabled = false;
+  }
 });
 
 /* ------------------------------ Início ------------------------------ */
-(async () => {
-  try {
-    services = await load();
-  } catch (e) {
-    console.error(e);
-    $("#months").innerHTML = `<p class="state">Não foi possível carregar os trabalhos agora. Recarregue a página em instantes.</p>`;
-    $("#tally").hidden = true;
-    return;
-  }
-  const fromUrl = new URLSearchParams(location.search).get("escola");
-  let saved = null;
-  try { saved = localStorage.getItem("escola"); } catch {}
-  school = [fromUrl, saved].find((id) => SCHOOLS.some((x) => x.id === id)) || SCHOOLS[0].id;
-  render();
-  if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
-})();
+if (DEMO) {
+  route();
+} else {
+  fbAuth = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  auth = fbAuth.getAuth(app);
+  let first = true;
+  fbAuth.onAuthStateChanged(auth, (u) => {
+    user = u;
+    if (first) { first = false; route(); }
+    else if (!school) renderCards();
+  });
+}

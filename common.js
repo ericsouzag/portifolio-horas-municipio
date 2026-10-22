@@ -9,6 +9,28 @@ export const schoolOf = (s) => (SCHOOLS.some((x) => x.id === s.school) ? s.schoo
 
 export const schoolInfo = (id) => SCHOOLS.find((x) => x.id === id) || SCHOOLS[0];
 
+/** Escola da conta logada (pelo e-mail de login da escola), ou null */
+export const schoolOfLogin = (email) =>
+  SCHOOLS.find((x) => x.login && x.login.toLowerCase() === String(email || "").toLowerCase())?.id || null;
+
+/**
+ * Resumo público usado na página inicial: só números, sem títulos nem descrições.
+ * { schools: { [id]: { minutes, count, months: { "2026-08": minutos } } } }
+ */
+export function summarize(list) {
+  const schools = {};
+  for (const sc of SCHOOLS) schools[sc.id] = { minutes: 0, count: 0, months: {} };
+  for (const s of list) {
+    if (!s.published) continue;
+    const b = schools[schoolOf(s)];
+    const m = minutesOf(s);
+    b.minutes += m;
+    b.count += 1;
+    if (s.month) b.months[s.month] = (b.months[s.month] || 0) + m;
+  }
+  return { schools };
+}
+
 /** true enquanto o config.js ainda não recebeu os dados do Firebase */
 export const DEMO = !firebaseConfig.apiKey || firebaseConfig.apiKey === "COLE_AQUI";
 

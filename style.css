@@ -54,18 +54,6 @@ code { font-size: .92em; background: rgba(0,0,0,.06); padding: 1px 5px; border-r
 
 .demo-banner { margin: 0; padding: 12px var(--gutter); background: #FFF6DA; color: #6B4E00; font-size: 14px; text-align: center; border-bottom: 1px solid #F0DFA6; }
 
-/* ---------- Seletor de escola ---------- */
-.schools { border-bottom: 1px solid var(--line); background: var(--surface); }
-.schools-in { padding-top: 16px; padding-bottom: 16px; display: flex; align-items: center; gap: 20px; }
-.schools-label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.school-tabs { display: flex; gap: 8px; padding: 4px; background: var(--soft); border-radius: 14px; min-width: 0; }
-.school-tab { display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 8px 18px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; text-align: left; }
-.school-tab:hover { background: rgba(255,255,255,.6); color: var(--ink); }
-.school-tab.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(21,23,28,.08), 0 0 0 1px var(--line); }
-.school-tab .short { display: none; }
-.school-hours { flex-shrink: 0; padding: 2px 10px; border-radius: 999px; background: rgba(21,23,28,.06); font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--muted); }
-.school-tab.on .school-hours { background: var(--accent-soft); color: var(--accent-dark); }
-
 /* ---------- Hero ---------- */
 .hero { border-bottom: 1px solid var(--line); }
 .hero-in { padding-top: 96px; padding-bottom: 80px; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 96px; align-items: end; }
@@ -87,6 +75,49 @@ code { font-size: .92em; background: rgba(0,0,0,.06); padding: 1px 5px; border-r
 .stats div { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; }
 .stats strong { font-family: var(--display); font-weight: 700; font-size: 26px; }
 .stats span { font-size: 13px; color: var(--muted); }
+
+/* ---------- Página inicial: escolas ---------- */
+.c0 { --sc: var(--accent); --sc-soft: var(--accent-soft); --sc-ink: var(--accent-dark); }
+.c1 { --sc: #0F7A5C; --sc-soft: #E3F3EC; --sc-ink: #0B5A43; }
+.c2 { --sc: #B4442B; --sc-soft: #FBEAE6; --sc-ink: #8E2F1B; }
+.c3 { --sc: #6B4FBB; --sc-soft: #EFEAFB; --sc-ink: #4F3796; }
+.sc-dot { display: inline-block; width: 10px; height: 10px; border-radius: 999px; background: var(--sc); flex-shrink: 0; }
+
+.hero-home { padding-top: 88px; padding-bottom: 80px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 72px; align-items: center; }
+.school-cards { display: flex; flex-direction: column; gap: 16px; }
+.school-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "top top" "name name" "nums cta"; gap: 14px 20px; width: 100%; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.school-card:hover { border-color: var(--sc); box-shadow: 0 8px 24px rgba(21,23,28,.08); transform: translateY(-2px); }
+.sc-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sc-top .sc-dot { width: 12px; height: 12px; }
+.sc-lock { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--soft); font-size: 12px; font-weight: 600; color: var(--muted); }
+.sc-name { grid-area: name; font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1.15; letter-spacing: -.015em; }
+.sc-nums { grid-area: nums; display: flex; align-items: baseline; gap: 12px; }
+.sc-nums strong { font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: -.02em; color: var(--sc); }
+.sc-nums span { font-size: 14px; color: var(--muted); }
+.sc-cta { grid-area: cta; align-self: end; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 999px; background: var(--sc); color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+.panorama { padding-top: 72px; padding-bottom: 32px; display: flex; flex-direction: column; gap: 28px; }
+.panorama .month-head h2 { font-size: 36px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px 28px; font-size: 15px; color: var(--text); }
+.legend > span { display: inline-flex; align-items: center; gap: 8px; }
+.legend strong { color: var(--ink); }
+.pan-rows { display: flex; flex-direction: column; }
+.pan-row { display: grid; grid-template-columns: 160px minmax(0, 1fr) 110px; gap: 32px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.pan-row:first-child { padding-top: 4px; }
+.pan-month { display: flex; align-items: baseline; gap: 8px; }
+.pan-month strong { font-family: var(--display); font-weight: 700; font-size: 22px; }
+.pan-month span { font-size: 14px; color: var(--faint); }
+.pan-bars { display: flex; flex-direction: column; gap: 10px; }
+.pan-bar { display: grid; grid-template-columns: 150px minmax(0, 1fr) 56px; align-items: center; gap: 14px; font-size: 14px; }
+.pan-label { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pan-bar .bar-track { height: 10px; }
+.pan-bar .bar-track span { background: var(--sc); }
+.pan-bar strong { text-align: right; font-weight: 600; }
+.pan-total { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.pan-total strong { font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1; }
+.pan-total span { font-size: 12px; color: var(--muted); }
+
+.dlg .gate-icon { margin-bottom: -4px; }
 
 /* ---------- Meses ---------- */
 .month { padding: 80px 0 32px; display: flex; flex-direction: column; gap: 48px; }
@@ -278,12 +309,22 @@ code { font-size: .92em; background: rgba(0,0,0,.06); padding: 1px 5px; border-r
   .brand strong { font-size: 18px; }
   .brand span { font-size: 12px; max-width: 58vw; }
   .monthnav, .sep { display: none; }
-  .schools-in { padding-top: 12px; padding-bottom: 12px; }
-  .schools-label { display: none; }
-  .school-tabs { width: 100%; }
-  .school-tab { flex: 1; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px 12px; font-size: 14px; }
-  .school-tab .full { display: none; }
-  .school-tab .short { display: inline; }
+  .top-nav { gap: 6px; }
+  .top-nav .btn-ghost { padding: 0 12px; height: 40px; }
+  #teacher { padding: 0 14px; height: 40px; }
+  .hero-home { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 40px; padding-bottom: 40px; }
+  .school-card { padding: 20px; gap: 12px 16px; border-radius: 14px; }
+  .sc-name { font-size: 21px; }
+  .sc-nums strong { font-size: 32px; }
+  .sc-cta { height: 40px; padding: 0 14px; }
+  .panorama { padding-top: 40px; gap: 20px; }
+  .panorama .month-head h2 { font-size: 24px; }
+  .pan-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "m t" "b b"; gap: 12px; padding: 18px 0; }
+  .pan-month { grid-area: m; }
+  .pan-total { grid-area: t; flex-direction: row; align-items: baseline; gap: 6px; }
+  .pan-total strong { font-size: 22px; }
+  .pan-bars { grid-area: b; }
+  .pan-bar { grid-template-columns: 112px minmax(0, 1fr) 44px; gap: 10px; font-size: 13px; }
   .hero-in { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-top: 40px; padding-bottom: 32px; }
   .hero-text { gap: 20px; }
   .lead { font-size: 16px; }

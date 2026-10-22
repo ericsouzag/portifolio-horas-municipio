@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trabalhos feitos para a escola</title>
-  <meta name="description" content="Portfólio de serviços prestados em compensação de horas, mês a mês.">
+  <title>Trabalhos feitos para as escolas</title>
+  <meta name="description" content="Portfólio de serviços prestados em compensação de horas, mês a mês, por escola.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,45 +14,91 @@
   <header class="top">
     <div class="wrap top-in">
       <div class="brand"><strong id="who"></strong><span id="where"></span></div>
-      <nav class="top-nav" aria-label="Meses">
+      <nav class="top-nav" aria-label="Navegação">
         <span id="monthnav" class="monthnav"></span>
-        <span class="sep" aria-hidden="true"></span>
-        <a class="btn-pill" href="admin.html">
+        <span class="sep" id="navsep" aria-hidden="true" hidden></span>
+        <a class="btn-ghost" id="back" href="./" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          Escolas</a>
+        <button class="btn-ghost" id="leave" type="button" hidden>Sair</button>
+        <a class="btn-pill" id="teacher" href="admin.html">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          Entrar</a>
+          Professor</a>
       </nav>
     </div>
   </header>
 
-  <p id="demo" class="demo-banner" hidden>Modo demonstração: estes são trabalhos de exemplo. Preencha o <code>config.js</code> com os dados do Firebase para usar o site de verdade.</p>
+  <p id="demo" class="demo-banner" hidden>Modo demonstração: estes são trabalhos de exemplo e qualquer senha funciona. Preencha o <code>config.js</code> com os dados do Firebase para usar o site de verdade.</p>
 
-  <nav class="schools" aria-label="Escolher escola">
-    <div class="wrap schools-in">
-      <span class="schools-label">Escola</span>
-      <div id="schooltabs" class="school-tabs"></div>
-    </div>
-  </nav>
-
-  <section class="hero">
-    <div class="wrap hero-in">
-      <div class="hero-text">
-        <span class="eyebrow">Portfólio · Compensação de horas</span>
-        <h1>Trabalhos feitos para a escola, mês a mês.</h1>
-        <p class="lead">Serviços realizados em compensação às reuniões administrativas. Cada registro mostra quem pediu, quanto tempo levou, o que foi feito e as imagens do resultado.</p>
+  <!-- ===================== Página inicial: escolha da escola + panorama ===================== -->
+  <div id="overview">
+    <section class="hero">
+      <div class="wrap hero-home">
+        <div class="hero-text">
+          <span class="eyebrow">Portfólio · Compensação de horas</span>
+          <h1>Trabalhos feitos para as escolas, mês a mês.</h1>
+          <p class="lead">Serviços realizados em compensação às reuniões administrativas. Escolha a escola para ver cada trabalho: quem pediu, quanto tempo levou, o que foi feito e as imagens. O acesso de cada escola é protegido por senha.</p>
+        </div>
+        <div class="school-cards" id="schoolcards"></div>
       </div>
-      <div class="tally" id="tally" aria-live="polite"></div>
-    </div>
-  </section>
+    </section>
 
-  <main id="months" class="wrap" aria-live="polite"><p class="state">Carregando…</p></main>
+    <section class="wrap panorama" aria-labelledby="pantitle">
+      <div class="month-head">
+        <h2 id="pantitle">Panorama de horas compensadas</h2>
+        <div class="month-count"><span>total geral</span><strong id="grandtotal">0h</strong></div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="pan-rows" id="panrows"><p class="state">Carregando…</p></div>
+    </section>
+  </div>
+
+  <!-- ===================== Trabalhos de uma escola ===================== -->
+  <div id="schoolview" hidden>
+    <section class="hero">
+      <div class="wrap hero-in">
+        <div class="hero-text">
+          <span class="eyebrow" id="schooleyebrow">Portfólio · Compensação de horas</span>
+          <h1 id="schooltitle"></h1>
+          <p class="lead">Serviços realizados em compensação às reuniões administrativas. Cada registro mostra quem pediu, quanto tempo levou, o que foi feito e as imagens do resultado.</p>
+        </div>
+        <div class="tally" id="tally" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <main id="months" class="wrap" aria-live="polite"><p class="state">Carregando…</p></main>
+  </div>
 
   <footer class="foot">
     <div class="wrap foot-in">
-      <span id="footnote"></span>
+      <span id="footnote">Registro de serviços prestados em compensação de horas</span>
       <a href="admin.html">Área do professor</a>
     </div>
   </footer>
 
+  <!-- ===================== Senha da escola ===================== -->
+  <dialog class="dlg" id="pwdlg" aria-labelledby="pwtitle">
+    <form id="pwform" novalidate>
+      <div class="gate-icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      </div>
+      <div>
+        <h2 id="pwtitle">Senha da escola</h2>
+        <p class="hint" id="pwschool"></p>
+      </div>
+      <div class="field">
+        <label for="pw">Senha</label>
+        <input type="password" id="pw" autocomplete="current-password" required>
+      </div>
+      <p class="msg err" id="pwmsg" role="alert" hidden></p>
+      <div class="actions">
+        <button class="btn" type="button" id="pwcancel">Cancelar</button>
+        <button class="btn btn-primary" type="submit" id="pwok">Entrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===================== Galeria ===================== -->
   <dialog id="lb" class="lb" aria-label="Galeria de imagens">
     <div class="lb-head">
       <div class="lb-title"><strong id="lbtitle"></strong><span id="lbmeta"></span></div>
