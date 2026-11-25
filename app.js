@@ -216,45 +216,48 @@ const OPEN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke
 const ARROW = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
 let summary = null;
 
+/** Resumo público: só o total somado das escolas. Aceita o formato antigo (por escola) até o painel regravar. */
+function combined() {
+  if (!summary) return { minutes: 0, months: {} };
+  if (!summary.schools) return { minutes: summary.minutes || 0, months: summary.months || {} };
+  const out = { minutes: 0, months: {} };
+  for (const d of Object.values(summary.schools)) {
+    out.minutes += d.minutes || 0;
+    for (const [m, v] of Object.entries(d.months || {})) out.months[m] = (out.months[m] || 0) + v;
+  }
+  return out;
+}
+
 function renderCards() {
-  const data = summary?.schools || {};
   $("#schoolcards").innerHTML = SCHOOLS.map((sc) => {
-    const d = data[sc.id] || { minutes: 0, count: 0 };
     const open = canSee(sc.id);
     return `<button type="button" class="school-card ${colorClass(sc.id)}" data-school="${esc(sc.id)}">
       <span class="sc-top"><span class="sc-dot" aria-hidden="true"></span><span class="sc-lock">${open ? OPEN + " Acesso liberado" : LOCK + " Com senha"}</span></span>
       <span class="sc-name">${esc(sc.name)}</span>
-      <span class="sc-nums"><strong>${fmtMin(d.minutes)}</strong><span>${plural(d.count, "trabalho", "trabalhos")}</span></span>
+      <span class="sc-hint">${open ? "Toque para ver os trabalhos e as horas desta escola." : "Digite a senha para ver os trabalhos e as horas desta escola."}</span>
       <span class="sc-cta">Ver trabalhos ${ARROW}</span>
     </button>`;
   }).join("");
 }
 
 function renderPanorama() {
-  const data = summary?.schools || {};
-  const months = [...new Set(SCHOOLS.flatMap((sc) => Object.keys(data[sc.id]?.months || {})))].sort().reverse();
-  const max = Math.max(1, ...SCHOOLS.flatMap((sc) => Object.values(data[sc.id]?.months || {})));
-  $("#grandtotal").textContent = fmtMin(SCHOOLS.reduce((t, sc) => t + (data[sc.id]?.minutes || 0), 0));
-  $("#legend").innerHTML = SCHOOLS.map((sc) =>
-    `<span class="${colorClass(sc.id)}"><span class="sc-dot" aria-hidden="true"></span>${esc(sc.short || sc.name)} <strong>${fmtMin(data[sc.id]?.minutes || 0)}</strong></span>`).join("");
+  const data = combined();
+  const months = Object.keys(data.months).sort().reverse();
+  const max = Math.max(1, ...Object.values(data.months));
+  $("#grandtotal").textContent = fmtMin(data.minutes);
   if (!months.length) {
     $("#panrows").innerHTML = `<p class="state">Nenhuma hora registrada ainda.</p>`;
     return;
   }
   $("#panrows").innerHTML = months.map((m) => {
     const info = monthInfo(m);
-    const total = SCHOOLS.reduce((t, sc) => t + (data[sc.id]?.months?.[m] || 0), 0);
+    const v = data.months[m] || 0;
     return `<div class="pan-row">
       <div class="pan-month"><strong>${esc(info.name)}</strong><span>${esc(info.year)}</span></div>
-      <div class="pan-bars">${SCHOOLS.map((sc) => {
-        const v = data[sc.id]?.months?.[m] || 0;
-        return `<div class="pan-bar ${colorClass(sc.id)}">
-          <span class="pan-label">${esc(sc.short || sc.name)}</span>
-          <span class="bar-track"><span style="width:${(v / max) * 100}%"></span></span>
-          <strong>${fmtMin(v)}</strong>
-        </div>`;
-      }).join("")}</div>
-      <div class="pan-total"><strong>${fmtMin(total)}</strong><span>no mês</span></div>
+      <div class="pan-bars"><div class="pan-bar pan-single c0">
+        <span class="bar-track"><span style="width:${(v / max) * 100}%"></span></span>
+      </div></div>
+      <div class="pan-total"><strong>${fmtMin(v)}</strong><span>no mês</span></div>
     </div>`;
   }).join("");
 }
